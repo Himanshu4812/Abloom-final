@@ -11,7 +11,22 @@ export const Header = () => {
   const [activeSection, setActiveSection] = React.useState<string>('');
   const [isGalleryIntro, setIsGalleryIntro] = React.useState(true);
   const [isHeroFinished, setIsHeroFinished] = React.useState(false);
+  const [logoImg, setLogoImg] = React.useState('/images/abloom-logo.webp');
   const scrolled = useScroll(10);
+
+  React.useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_images');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const logo = json.data.find((item: any) => item.slot === 'abloom-logo');
+          if (logo) setLogoImg(logo.src);
+        }
+      } catch { /* fallback */ }
+    };
+    loadImages();
+  }, []);
 
   React.useEffect(() => {
     // Delay navbar appearance until the giant ABLOOM letter sequence finishes (~3.2s)
@@ -150,7 +165,7 @@ export const Header = () => {
               }}
             >
               <img
-                src="/images/abloom-logo.webp"
+                src={logoImg}
                 alt="Abloom"
                 width={160}
                 height={40}

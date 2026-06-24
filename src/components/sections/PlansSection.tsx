@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight } from 'lucide-react';
 
-const masterplanData = [
+const defaultMasterplanData = [
   {
     id: 'blueprint',
     title: 'The 10-Plot Blueprint',
@@ -44,8 +44,45 @@ const masterplanData = [
 ];
 
 export function PlansSection() {
-  const [activeId, setActiveId] = useState(masterplanData[0].id);
+  const [masterplanData, setMasterplanData] = useState(defaultMasterplanData);
+  const [activeId, setActiveId] = useState(defaultMasterplanData[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_masterplan');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          setMasterplanData(json.data.map((item: any) => ({
+            id: item.number || item.id,
+            title: item.title,
+            subtitle: item.subtitle || '',
+            description: item.description || '',
+            area: item.area || '',
+            amenities: item.amenities || '',
+            imageUrl: item.image || '',
+          })));
+          return;
+        }
+      } catch { /* fallback */ }
+      // fallback: try image slots for URLs
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_images');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const slotMap: Record<string, string> = {};
+          json.data.forEach((item: any) => { slotMap[item.slot] = item.src; });
+          setMasterplanData((prev) => prev.map((s) => {
+            const fileName = s.imageUrl.split('/').pop()?.replace('.webp', '');
+            const mapped = fileName && slotMap[fileName] ? slotMap[fileName] : null;
+            return mapped ? { ...s, imageUrl: mapped } : s;
+          }));
+        }
+      } catch { /* stay with hardcoded */ }
+    };
+    loadData();
+  }, []);
 
   const activeSector = masterplanData.find(s => s.id === activeId) || masterplanData[0];
   const selectedSector = masterplanData.find(s => s.id === selectedId);

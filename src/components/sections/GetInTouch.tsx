@@ -28,12 +28,30 @@ export const GetInTouch = () => {
   });
 
   const [isSuccess, setIsSuccess] = useState(false);
+  const [villaBg, setVillaBg] = useState('/images/luxury-villa-bg.webp');
+  const [logoImg, setLogoImg] = useState('/images/abloom-logo.webp');
   const shouldReduceMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const formCardRef = useRef<HTMLDivElement>(null);
 
   const WHATSAPP_NUMBER = '919766180144';
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_images');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const slotMap: Record<string, string> = {};
+          json.data.forEach((item: any) => { slotMap[item.slot] = item.src; });
+          if (slotMap['luxury-villa-bg']) setVillaBg(slotMap['luxury-villa-bg']);
+          if (slotMap['abloom-logo']) setLogoImg(slotMap['abloom-logo']);
+        }
+      } catch { /* fallback */ }
+    };
+    loadImages();
+  }, []);
 
   useEffect(() => {
     if (!sectionRef.current || shouldReduceMotion) return;
@@ -138,7 +156,7 @@ Thank you.`;
           <div 
             className="w-full h-full mix-blend-multiply saturate-50 sepia-[20%] hue-rotate-[70deg]"
             style={{ 
-              backgroundImage: 'url("/images/luxury-villa-bg.webp")',
+              backgroundImage: `url("${villaBg}")`,
               backgroundSize: 'cover',
               backgroundPosition: 'center 40%',
               // Soft feathered edges
@@ -248,7 +266,7 @@ Thank you.`;
                   >
                     <div className="mb-8">
                       <img
-                        src="/images/abloom-logo.webp"
+                        src={logoImg}
                         alt="Abloom logo"
                         width={32}
                         height={32}

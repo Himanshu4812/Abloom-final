@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 
-const galleryItems = [
+const defaultGalleryItems = [
   {
     title: 'LUSH GREENERY',
     subtitle: 'Pristine nature just outside your door',
@@ -64,8 +64,41 @@ export function Gallery() {
   const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
   const [hoverState, setHoverState] = useState<'prev' | 'next' | null>(null);
   const [showIntro, setShowIntro] = useState(true);
+  const [galleryItems, setGalleryItems] = useState(defaultGalleryItems);
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, amount: 0.3 });
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_gallery');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          setGalleryItems(json.data.map((item: any) => ({
+            title: item.title,
+            subtitle: item.subtitle || '',
+            image: item.image,
+          })));
+          return;
+        }
+      } catch { /* fallback to hardcoded */ }
+      // fallback: try image slots for URLs
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_images');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const slotMap: Record<string, string> = {};
+          json.data.forEach((item: any) => { slotMap[item.slot] = item.src; });
+          setGalleryItems((prev) => prev.map((item) => {
+            const fileName = item.image.split('/').pop()?.replace('.webp', '');
+            const mapped = fileName && slotMap[fileName] ? slotMap[fileName] : null;
+            return mapped ? { ...item, image: mapped } : item;
+          }));
+        }
+      } catch { /* stay with hardcoded */ }
+    };
+    loadData();
+  }, []);
 
   useEffect(() => {
     // Notify header about intro state

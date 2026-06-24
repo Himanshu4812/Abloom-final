@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { fadeUp, staggerContainer } from '@/lib/utils';
 import { abloom } from '@/src/data/abloom';
@@ -45,13 +45,37 @@ export const Overview = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [hoveredCardIndex, setHoveredCardIndex] = useState<number | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_images');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const slotMap: Record<string, string> = {};
+          json.data.forEach((item: any) => {
+            const name = item.slot;
+            slotMap[name] = item.src;
+          });
+          setCards((prev) => prev.map((ch) => {
+            const fileName = ch.src.split('/').pop()?.replace('.webp', '');
+            const mapped = fileName ? slotMap[fileName] : null;
+            return mapped ? { ...ch, src: mapped } : ch;
+          }));
+        }
+      } catch {
+        // fallback to hardcoded data
+      }
+    };
+    loadImages();
   }, []);
 
   const moveCardToEnd = () => {

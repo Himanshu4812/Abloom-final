@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
-const cards = [
+const defaultCards = [
   {
     num: "1",
     desc: "Two decades of transforming landscapes into landmarks. We build visionary projects in the lap of nature, bringing you closer to your deepest desires.",
@@ -35,6 +35,27 @@ const cards = [
 ];
 
 export function UnitInfrastructure() {
+  const [cards, setCards] = useState(defaultCards);
+
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const res = await fetch('/api/abloom?collection=Abloom_images');
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          const slotMap: Record<string, string> = {};
+          json.data.forEach((item: any) => { slotMap[item.slot] = item.src; });
+          setCards((prev) => prev.map((card) => {
+            const fileName = card.img.split('/').pop()?.replace('.webp', '');
+            const mapped = fileName && slotMap[fileName] ? slotMap[fileName] : null;
+            return mapped ? { ...card, img: mapped } : card;
+          }));
+        }
+      } catch { /* fallback */ }
+    };
+    loadImages();
+  }, []);
+
   return (
     <section className="bg-[#FDFBF7] text-forest w-full relative z-20">
       {/* Sticky Full-Width Heading with Solid Background */}
